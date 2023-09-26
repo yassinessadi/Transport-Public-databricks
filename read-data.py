@@ -10,14 +10,16 @@ from pyspark.sql.functions import year, month,dayofmonth,dayofweek
 from pyspark.sql.types import IntegerType
 from datetime import datetime
 from pyspark.sql.functions import col
+from pyspark.sql.functions import when
+from pyspark.sql.functions import hour
 
 # COMMAND ----------
 
 #Connection configuration
 spark.conf.set(
-"fs.azure.account.key.yassineessadidatalakeg2.blob.core.windows.net", "gWYEfszXt9mbYAwRbZP0hE3Bo1rZUFJoFw71LWPsENPoEPb5CzWeN28ukbQV6/o3vm6mlyg31lim+ASt3uGX5A==")
+"fs.azure.account.key.yassineessadidatalake.blob.core.windows.net", "h86GBzEpa+ThpzecSIcdLHOhT8FMLIx37mko3qGirDhVBAEd+Ug5QsQmkCsyF9nT5WEHYZVD/cZF+AStlYlQrQ==")
 
-spark_df = spark.read.format('csv').option('header', True).load("wasbs://data@yassineessadidatalakeg2.blob.core.windows.net/public_transport_data/raw/*.csv")
+spark_df = spark.read.format('csv').option('header', True).load("wasbs://data@yassineessadidatalake.blob.core.windows.net/public_transport_data/raw/*.csv")
 
 display(spark_df)
 
@@ -47,3 +49,24 @@ spark_df = spark_df.withColumn("Duration (H)", ((col("ArrivalTime").cast("timest
 
 
 display(spark_df)
+
+# COMMAND ----------
+
+spark_df = spark_df.withColumn("Retard",when(spark_df["Delay"] <= 0, 'Pas de Retard').when(spark_df["Delay"] <= 10, "Retard Court").when(spark_df["Delay"] <= 20, "Retard Moyen").otherwise( 'Long Retard'))
+
+# COMMAND ----------
+
+display(spark_df)
+
+# COMMAND ----------
+
+spark_df = spark_df.withColumn("hours_DepartureTime", hour(spark_df["DepartureTime"]))
+
+# COMMAND ----------
+
+from pyspark.sql.functions import sum, avg, max
+
+result = spark_df.groupBy("hours_DepartureTime").agg(
+    avg("Passengers").alias("sum_Passengers_per_Hours")
+)
+display(result)
