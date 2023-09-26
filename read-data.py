@@ -44,11 +44,15 @@ display(spark_df)
 
 #spark_df.select('DepartureTime','ArrivalTime').show()
 
-spark_df = spark_df.withColumn("Duration (M)", ((col("ArrivalTime").cast("timestamp") - col("DepartureTime").cast("timestamp")) / 60).cast("int"))
-spark_df = spark_df.withColumn("Duration (H)", ((col("ArrivalTime").cast("timestamp") - col("DepartureTime").cast("timestamp")) / 3600).cast("int"))
+spark_df = spark_df.withColumn("Duration_Minutes", ((col("ArrivalTime").cast("timestamp") - col("DepartureTime").cast("timestamp")) / 60).cast("int"))
+spark_df = spark_df.withColumn("Duration_Hours", ((col("ArrivalTime").cast("timestamp") - col("DepartureTime").cast("timestamp")) / 3600).cast("int"))
 
 
 display(spark_df)
+
+# COMMAND ----------
+
+display(spark_df.where(col("Duration_Minutes").isNotNull()))
 
 # COMMAND ----------
 
@@ -57,6 +61,10 @@ spark_df = spark_df.withColumn("Retard",when(spark_df["Delay"] <= 0, 'Pas de Ret
 # COMMAND ----------
 
 display(spark_df)
+
+# COMMAND ----------
+
+spark_df.where(spark_df.>4).show()
 
 # COMMAND ----------
 
