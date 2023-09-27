@@ -22,10 +22,12 @@ from pyspark.sql.functions import sum, avg, max
 # COMMAND ----------
 
 #Connection configuration
+spark.conf.set(
+    "fs.azure.account.key.yassineessadistorageg2.blob.core.windows.net", "Par6PN6r2BUU9Z4Kzd4ITeN/l4SniXsOR6/Rrtup6LxocPLhWpzv5IxyynGRfT6rOixSc0QH2GUr+AStkS4mXQ==")
 def GetFilesByMonth(Month):
     spark.conf.set(
     "fs.azure.account.key.yassineessadistorageg2.blob.core.windows.net", "Par6PN6r2BUU9Z4Kzd4ITeN/l4SniXsOR6/Rrtup6LxocPLhWpzv5IxyynGRfT6rOixSc0QH2GUr+AStkS4mXQ==")
-
+    
     file_path = f"wasbs://data@yassineessadistorageg2.blob.core.windows.net/public_transport_data/raw/Year=2023/{Month}*.csv"
     spark_df = spark.read.format('csv').option('header', True).load(file_path)
 
