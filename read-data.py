@@ -21,7 +21,7 @@ def GetFilesByMonth(Month):
     spark.conf.set(
     "fs.azure.account.key.yassineessadistorageg2.blob.core.windows.net", "Par6PN6r2BUU9Z4Kzd4ITeN/l4SniXsOR6/Rrtup6LxocPLhWpzv5IxyynGRfT6rOixSc0QH2GUr+AStkS4mXQ==")
 
-    file_path = f"wasbs://data@yassineessadistorageg2.blob.core.windows.net/public_transport_data/raw/Year=2023/Month={Month}/*.csv"
+    file_path = f"wasbs://data@yassineessadistorageg2.blob.core.windows.net/public_transport_data/raw/Year=2023/{Month}*.csv"
     spark_df = spark.read.format('csv').option('header', True).load(file_path)
 
     # Add Year Month , Day and convert Date Columns
@@ -50,5 +50,17 @@ def GetFilesByMonth(Month):
 
 # COMMAND ----------
 
-for x in range(3,4):
-    GetFilesByMonth(x)
+raw = "wasbs://data@yassineessadistorageg2.blob.core.windows.net/public_transport_data/raw/Year=2023"
+processed = "wasbs://data@yassineessadistorageg2.blob.core.windows.net/public_transport_data/processed/Year=2023"
+
+processed_count = 0
+
+files_raw = dbutils.fs.ls(raw)
+files_processed = [x.name for x in dbutils.fs.ls(processed)]
+for r in files_raw:
+    if processed_count == 2:
+        break
+    if r.name not in files_processed:
+        GetFilesByMonth(r.name)
+        processed_count+=1
+
