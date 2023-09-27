@@ -1,11 +1,16 @@
 # Databricks notebook source
+from pyspark.sql.functions import year, month,dayofmonth,dayofweek
+from pyspark.sql.types import IntegerType
+
+# COMMAND ----------
+
 import pandas as ps
 import random
 from datetime import datetime, timedelta
 
 # Generate data for January 2023
 start_date = datetime(2023, 1, 1)
-end_date = datetime(2023, 1, 30)
+end_date = datetime(2023, 5, 30)
 date_generated = [start_date + timedelta(days=x) for x in range(0, (end_date-start_date).days)]
 
 transport_types = ["Bus", "Train", "Tram", "Metro"]
@@ -68,7 +73,9 @@ spark_df = spark.createDataFrame(df)
 
 session = spark.builder.getOrCreate()
 session.conf.set(
-"fs.azure.account.key.yassineessadidatalake.blob.core.windows.net", "h86GBzEpa+ThpzecSIcdLHOhT8FMLIx37mko3qGirDhVBAEd+Ug5QsQmkCsyF9nT5WEHYZVD/cZF+AStlYlQrQ==")
-spark_df.toPandas()
+"fs.azure.account.key.yassineessadistorageg2.blob.core.windows.net", "Par6PN6r2BUU9Z4Kzd4ITeN/l4SniXsOR6/Rrtup6LxocPLhWpzv5IxyynGRfT6rOixSc0QH2GUr+AStkS4mXQ==")
 
-spark_df.coalesce(1).write.format("csv").option('header', True).mode("overwrite").save("wasbs://data@yassineessadidatalake.blob.core.windows.net/public_transport_data/raw")
+spark_df = spark_df.withColumn("Year", year(spark_df["Date"]).cast(IntegerType()))
+spark_df = spark_df.withColumn("Month", month(spark_df["Date"]).cast(IntegerType()))
+
+spark_df.coalesce(1).write.partitionBy("Year","Month").format("csv").option('header', True).mode("append").save("wasbs://data@yassineessadistorageg2.blob.core.windows.net/public_transport_data/raw")

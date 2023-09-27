@@ -12,69 +12,43 @@ from datetime import datetime
 from pyspark.sql.functions import col
 from pyspark.sql.functions import when
 from pyspark.sql.functions import hour
+from pyspark.sql.functions import sum, avg, max
 
 # COMMAND ----------
 
 #Connection configuration
-spark.conf.set(
-"fs.azure.account.key.yassineessadidatalake.blob.core.windows.net", "h86GBzEpa+ThpzecSIcdLHOhT8FMLIx37mko3qGirDhVBAEd+Ug5QsQmkCsyF9nT5WEHYZVD/cZF+AStlYlQrQ==")
+def GetFilesByMonth(Month):
+    spark.conf.set(
+    "fs.azure.account.key.yassineessadistorageg2.blob.core.windows.net", "Par6PN6r2BUU9Z4Kzd4ITeN/l4SniXsOR6/Rrtup6LxocPLhWpzv5IxyynGRfT6rOixSc0QH2GUr+AStkS4mXQ==")
 
-spark_df = spark.read.format('csv').option('header', True).load("wasbs://data@yassineessadidatalake.blob.core.windows.net/public_transport_data/raw/*.csv")
+    file_path = f"wasbs://data@yassineessadistorageg2.blob.core.windows.net/public_transport_data/raw/Year=2023/Month={Month}/*.csv"
+    spark_df = spark.read.format('csv').option('header', True).load(file_path)
 
-display(spark_df)
+    # Add Year Month , Day and convert Date Columns
+    spark_df = spark_df.withColumn("Date", col("Date").cast("Date"))
+    spark_df = spark_df.withColumn("Year", year(spark_df["Date"]).cast(IntegerType()))
+    spark_df = spark_df.withColumn("Month", month(spark_df["Date"]).cast(IntegerType()))
+    spark_df = spark_df.withColumn("DayOfMonth", dayofmonth(spark_df["Date"]).cast(IntegerType()))
+    spark_df = spark_df.withColumn("DayOfWeek", dayofweek(spark_df["Date"]).cast(IntegerType()))
 
-# COMMAND ----------
+    # Add Duration Between each Arrival
+    spark_df = spark_df.withColumn("Duration_Minutes", ((col("ArrivalTime").cast("timestamp") - col("DepartureTime").cast("timestamp")) / 60).cast("int"))
+    spark_df = spark_df.withColumn("Duration_Hours", ((col("ArrivalTime").cast("timestamp") - col("DepartureTime").cast("timestamp")) / 3600).cast("int"))
 
+    # Add rows contains null after calc the Duration time :
 
+    spark_df = spark_df.where(col("Duration_Minutes").isNotNull())
 
-#Add columns year, month, day, and day of the week
-#spark_df  = spark.createDataFrame(spark_df, ["Date"])
-spark_df = spark_df.withColumn("Date", col("Date").cast("Date"))
-spark_df = spark_df.withColumn("Year", year(spark_df["Date"]).cast(IntegerType()))
-spark_df = spark_df.withColumn("Month", month(spark_df["Date"]).cast(IntegerType()))
-spark_df = spark_df.withColumn("DayOfMonth", dayofmonth(spark_df["Date"]).cast(IntegerType()))
-spark_df = spark_df.withColumn("DayOfWeek", dayofweek(spark_df["Date"]).cast(IntegerType()))
+    # Delay Analysis:
+    spark_df = spark_df.withColumn("Retard",when(spark_df["Delay"] <= 0, 'Pas de Retard').when(spark_df["Delay"] <= 10, "Retard Court").when(spark_df["Delay"] <= 20, "Retard Moyen").otherwise( 'Long Retard'))
+    #Anlytics
+    spark_df = spark_df.withColumn("hours_DepartureTime", hour(spark_df["DepartureTime"]))
 
-display(spark_df)
-
-
-
-# COMMAND ----------
-
-
-#spark_df.select('DepartureTime','ArrivalTime').show()
-
-spark_df = spark_df.withColumn("Duration_Minutes", ((col("ArrivalTime").cast("timestamp") - col("DepartureTime").cast("timestamp")) / 60).cast("int"))
-spark_df = spark_df.withColumn("Duration_Hours", ((col("ArrivalTime").cast("timestamp") - col("DepartureTime").cast("timestamp")) / 3600).cast("int"))
+    spark_df.coalesce(1).write.partitionBy("Year","Month").format("csv").option('header', True).mode("append").save("wasbs://data@yassineessadistorageg2.blob.core.windows.net/public_transport_data/processed/")
 
 
-display(spark_df)
 
 # COMMAND ----------
 
-display(spark_df.where(col("Duration_Minutes").isNotNull()))
-
-# COMMAND ----------
-
-spark_df = spark_df.withColumn("Retard",when(spark_df["Delay"] <= 0, 'Pas de Retard').when(spark_df["Delay"] <= 10, "Retard Court").when(spark_df["Delay"] <= 20, "Retard Moyen").otherwise( 'Long Retard'))
-
-# COMMAND ----------
-
-display(spark_df)
-
-# COMMAND ----------
-
-spark_df.where(spark_df.>4).show()
-
-# COMMAND ----------
-
-spark_df = spark_df.withColumn("hours_DepartureTime", hour(spark_df["DepartureTime"]))
-
-# COMMAND ----------
-
-from pyspark.sql.functions import sum, avg, max
-
-result = spark_df.groupBy("hours_DepartureTime").agg(
-    avg("Passengers").alias("sum_Passengers_per_Hours")
-)
-display(result)
+for x in range(3,4):
+    GetFilesByMonth(x)
