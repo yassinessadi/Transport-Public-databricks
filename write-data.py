@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 
 # Generate data for January 2023
 start_date = datetime(2023, 1, 1)
-end_date = datetime(2023, 5, 30)
+end_date = datetime(2023, 12, 31)
 date_generated = [start_date + timedelta(days=x) for x in range(0, (end_date-start_date).days)]
 
 transport_types = ["Bus", "Train", "Tram", "Metro"]
