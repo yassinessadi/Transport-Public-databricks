@@ -16,6 +16,11 @@ from pyspark.sql.functions import sum, avg, max
 
 # COMMAND ----------
 
+# MAGIC %md
+# MAGIC # Transformation / Cleaning 
+
+# COMMAND ----------
+
 #Connection configuration
 def GetFilesByMonth(Month):
     spark.conf.set(
@@ -50,6 +55,11 @@ def GetFilesByMonth(Month):
 
 # COMMAND ----------
 
+# MAGIC %md
+# MAGIC # Automation / WorkFlows
+
+# COMMAND ----------
+
 raw = "wasbs://data@yassineessadistorageg2.blob.core.windows.net/public_transport_data/raw/Year=2023"
 processed = "wasbs://data@yassineessadistorageg2.blob.core.windows.net/public_transport_data/processed/Year=2023"
 
@@ -62,5 +72,5 @@ for r in files_raw:
         break
     if r.name not in files_processed:
         GetFilesByMonth(r.name)
-        processed_count+=1
+        processed_count += 1
 
